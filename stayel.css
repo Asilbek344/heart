@@ -91,4 +91,14 @@ small {
     color: #999;
     display: block;
     margin-top: 6px;
-    text-align: center; }
+    text-align: center; 
+}
+.era{
+    font-size: 36px;
+    color: #ff00008e;
+    
+}
+.era:hover{
+    color: #eee;
+    transition: 0.5s;
+}
