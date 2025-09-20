@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="uz">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Heart Particle Animation</title>
+    <link rel="stylesheet" href="./stayel.css">
+    <style>
+        :root {
+            --bg: #000;
+            --heart-color: #ff0000;
+        }
+
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+            background: var(--bg);
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+            color: #fff;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .wrap {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 20px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        h1 {
+            margin: 0;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            color: #eee;
+            font-size: 24px;
+            text-align: center;
+        }
+
+        #heart_canvas {
+            width: 540px;
+            height: 540px;
+            max-width: 96vw;
+            max-height: 70vh;
+            border-radius: 16px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.02);
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.85));
+            display: block;
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #ddd;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        small {
+            color: #999;
+            display: block;
+            margin-top: 6px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+        <h1>Heart Animation — bosginga pulse</h1>
+        <canvas id="heart_canvas"></canvas>
+        <div class="controls">
+            <button id="pulseBtn" class="btn">Pulse (siqish)</button>
+            <button id="toggleBtn" class="btn">Toʻxtat / Qayta ishga tushir</button>
+            <button id="colorBtn" class="btn">Rangni oʻzgartir</button>
+        </div>
+        <small>Rang, zarrachalar soni va tezlikni pastdagi koddan o'zgartirishing mumkin.</small>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('heart_canvas');
+        const ctx = canvas.getContext('2d', { alpha: true });
+        let w = canvas.width = canvas.clientWidth * devicePixelRatio;
+        let h = canvas.height = canvas.clientHeight * devicePixelRatio;
+        ctx.scale(devicePixelRatio, devicePixelRatio);
+
+        // SETTINGS (o'zgartirsa bo'ladi)
+        let PARTICLE_COUNT = 900;      // zarracha soni
+        let SIZE = Math.min(canvas.clientWidth, canvas.clientHeight); // bazaviy o'lcham
+        let HEART_SCALE = SIZE / 30;   // yurak hajmi
+        let CENTER_X = canvas.clientWidth / 2;
+        let CENTER_Y = canvas.clientHeight / 2 + 20;
+        let globalHue = 350; // boshlang'ich rang (0-360)
+        let running = true;
+
+        // Particle konstruktor
+        function Particle(x, y, color) {
+            this.x = x;
+            this.y = y;
+            this.vx = (Math.random() - 0.5) * 0.6;
+            this.vy = (Math.random() - 0.5) * 0.6;
+            this.tx = x;
+            this.ty = y;
+            this.life = Math.random() * 100 + 50;
+            this.age = Math.random() * this.life;
+            this.size = Math.random() * 1.6 + 0.4;
+            this.color = color;
+        }
+
+        Particle.prototype.update = function (dt) {
+            // simple spring to target + slight random motion
+            const spring = 0.06 + Math.random() * 0.02;
+            this.vx += (this.tx - this.x) * spring * dt;
+            this.vy += (this.ty - this.y) * spring * dt;
+            // slight damping
+            this.vx *= 0.93;
+            this.vy *= 0.93;
+            this.x += this.vx * dt;
+            this.y += this.vy * dt;
+            this.age += dt;
+            if (this.age > this.life) {
+                // respawn near heart
+                const p = randomHeartPoint();
+                this.tx = p.x;
+                this.ty = p.y;
+                this.age = 0;
+                this.life = Math.random() * 120 + 40;
+                this.size = Math.random() * 1.8 + 0.4;
+            }
+        }
+        Particle.prototype.draw = function (ctx) {
+            ctx.beginPath();
+            ctx.globalCompositeOperation = 'lighter';
+            ctx.fillStyle = this.color;
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fill();
+        };
+
+        // Heart parametric curve (classic)
+        function heartXY(t) {
+            // t in [0, 2PI]
+            const x = 16 * Math.pow(Math.sin(t), 3);
+            const y = 13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t);
+            return { x, y: -y }; // invert Y so heart points down in math -> up in canvas
+        }
+
+        function mapToCanvas(pt) {
+            return {
+                x: CENTER_X + pt.x * HEART_SCALE,
+                y: CENTER_Y + pt.y * HEART_SCALE
+            };
+        }
+
+        // random point on heart (with small jitter)
+        function randomHeartPoint() {
+            const t = Math.random() * Math.PI * 2;
+            const p = heartXY(t);
+            const c = mapToCanvas(p);
+            // jitter to get fuzzy/smoke effect
+            c.x += (Math.random() - 0.5) * 18;
+            c.y += (Math.random() - 0.5) * 18;
+            return c;
+        }
+
+        // create particles
+        const particles = [];
+        function createParticles() {
+            particles.length = 0;
+            for (let i = 0; i < PARTICLE_COUNT; i++) {
+                const p = randomHeartPoint();
+                const hue = (globalHue + Math.random() * 30 - 15) % 360;
+                const col = `hsla(${hue}, 100%, ${20 + Math.random() * 40}%, ${0.95 - Math.random() * 0.6})`;
+                // spawn slightly away so they move inwards
+                const startX = p.x + (Math.random() - 0.5) * 200;
+                const startY = p.y + (Math.random() - 0.5) * 200;
+                particles.push(new Particle(startX, startY, col));
+                // set target to heart point
+                particles[particles.length - 1].tx = p.x;
+                particles[particles.length - 1].ty = p.y;
+            }
+        }
+        createParticles();
+
+        // animation loop
+        let last = performance.now();
+        function frame(now) {
+            const dt = Math.min((now - last) / 16.6667, 3); // normalized to ~60fps
+            last = now;
+            if (!running) {
+                requestAnimationFrame(frame);
+                return;
+            }
+            // fade background slightly to create trails
+            ctx.globalCompositeOperation = 'source-over';
+            ctx.fillStyle = 'rgba(0,0,0,0.18)'; // trail length: lower = longer trails
+            ctx.fillRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+
+            // subtle glow layer
+            ctx.save();
+            ctx.translate(0, 0);
+
+            // draw particles
+            for (let i = 0; i < particles.length; i++) {
+                particles[i].update(dt);
+                particles[i].draw(ctx);
+            }
+
+            ctx.restore();
+
+            requestAnimationFrame(frame);
+        }
+        requestAnimationFrame(frame);
+
+        // Pulse effect: push targets outward/inward briefly
+        function pulse(force = 1.4) {
+            for (let i = 0; i < particles.length; i++) {
+                const p = particles[i];
+                // vector from center to target
+                const dx = p.tx - CENTER_X;
+                const dy = p.ty - CENTER_Y;
+                // push target further out or in
+                p.tx = CENTER_X + dx * force + (Math.random() - 0.5) * 8;
+                p.ty = CENTER_Y + dy * force + (Math.random() - 0.5) * 8;
+            }
+            // return them to normal after short delay
+            setTimeout(() => {
+                for (let i = 0; i < particles.length; i++) {
+                    const r = randomHeartPoint(); // recompute base target near heart
+                    // smooth return
+                    particles[i].tx = r.x + (Math.random() - 0.5) * 6;
+                    particles[i].ty = r.y + (Math.random() - 0.5) * 6;
+                }
+            }, 300);
+        }
+
+        // Resize handling
+        function resize() {
+            // adapt canvas to element size & dpr
+            const rect = canvas.getBoundingClientRect();
+            w = canvas.width = rect.width * devicePixelRatio;
+            h = canvas.height = rect.height * devicePixelRatio;
+            ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+            CENTER_X = rect.width / 2;
+            CENTER_Y = rect.height / 2 + 20;
+        }
+        SIZE = Math.min(rect.width, rect.height);
+        HEART_SCALE = SIZE / 30;
+        // refresh particle targets
+        for (let i = 0; i < particles.length; i++) {
+            const r = randomHeartPoint();
+            particles[i].tx = r.x;
+            particles[i].ty = r.y;
+        }
+        // redraw background fill to avoid flicker
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, rect.width, rect.height);
+
+        window.addEventListener('resize', debounce(resize, 120));
+
+            // simple debounce
+            function debounce(fn, wait) {
+                let t;
+                return function () {
+                    clearTimeout(t);
+                    t = setTimeout(() => fn.apply(this, arguments), wait);
+                };
+            }
+
+            // Controls
+            document.getElementById('pulseBtn').addEventListener('click', () => pulse(1.6));
+            document.getElementById('toggleBtn').addEventListener('click', () => {
+                running = !running;
+                if (running) { last = performance.now(); requestAnimationFrame(frame); }
+            });
+            document.getElementById('colorBtn').addEventListener('click', () => {
+                globalHue = (globalHue + 40) % 360;
+                // recolor current particles
+                for (let i = 0; i < particles.length; i++) {
+                    const hue = (globalHue + Math.random() * 30 - 15) % 360;
+                    particles[i].color = `hsla(${hue}, 100%, ${20 + Math.random() * 40}%, ${0.95 - Math.random() * 0.6})`;
+                }
+            });
+
+            // click/tap to pulse at pointer
+            canvas.addEventListener('pointerdown', (e) => {
+                // make a local pulse stronger
+                pulse(1.9);
+                // small burst of bright particles at pointer
+                const rect = canvas.getBoundingClientRect();
+                const px = (e.clientX - rect.left);
+                const py = (e.clientY - rect.top);
+                for (let i = 0; i < 40; i++) {
+                    const p = new Particle(px + (Math.random() - 0.5) * 20, py + (Math.random() - 0.5) * 20, `hsla(${globalHue}, 100%, ${60 + Math.random() * 20}%, 1)`);
+                    p.tx = CENTER_X + (Math.random() - 0.5) * 160;
+                    p.ty = CENTER_Y + (Math.random() - 0.5) * 160;
+                    p.size = 2 + Math.random() * 2;
+                    particles.push(p);
+                }
+                // keep particle count bounded
+                while (particles.length > PARTICLE_COUNT + 120) particles.shift();
+            });
+
+            // initial clear
+            ctx.fillStyle = 'black';
+            ctx.fillRect(0, 0, canvas.clientWidth, canvas.clientHeight);
+
+// ensure size initially correct
+resize();
+    </script>
+</body>
+
+</html>
