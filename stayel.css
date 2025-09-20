@@ -3,12 +3,22 @@
     --heart-color: #ff0000;
     width: 100%;
 }
+@media (max-width:360px) {
+    .wrap{
+        max-width: 350px;
+        height: 50vh;
+    }
+    .controls{
+        max-width: 350px;
+        height: 50vh;
+    }
+}
 
 html,
 body {
     height: 100%;
     margin: 0;
-    background: var(--bg);
+    background: var(--bg red);
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
     color: #fff;
     -webkit-font-smoothing: antialiased;

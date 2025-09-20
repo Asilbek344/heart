@@ -6,7 +6,8 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Heart Particle Animation</title>
     <link rel="stylesheet" href="./stayel.css">
-      
+
+
     <style>
         :root {
             --bg: #000;
@@ -278,55 +279,55 @@
 
         window.addEventListener('resize', debounce(resize, 120));
 
-            // simple debounce
-            function debounce(fn, wait) {
-                let t;
-                return function () {
-                    clearTimeout(t);
-                    t = setTimeout(() => fn.apply(this, arguments), wait);
-                };
+        // simple debounce
+        function debounce(fn, wait) {
+            let t;
+            return function () {
+                clearTimeout(t);
+                t = setTimeout(() => fn.apply(this, arguments), wait);
+            };
+        }
+
+        // Controls
+        document.getElementById('pulseBtn').addEventListener('click', () => pulse(1.6));
+        document.getElementById('toggleBtn').addEventListener('click', () => {
+            running = !running;
+            if (running) { last = performance.now(); requestAnimationFrame(frame); }
+        });
+        document.getElementById('colorBtn').addEventListener('click', () => {
+            globalHue = (globalHue + 40) % 360;
+            // recolor current particles
+            for (let i = 0; i < particles.length; i++) {
+                const hue = (globalHue + Math.random() * 30 - 15) % 360;
+                particles[i].color = `hsla(${hue}, 100%, ${20 + Math.random() * 40}%, ${0.95 - Math.random() * 0.6})`;
             }
+        });
 
-            // Controls
-            document.getElementById('pulseBtn').addEventListener('click', () => pulse(1.6));
-            document.getElementById('toggleBtn').addEventListener('click', () => {
-                running = !running;
-                if (running) { last = performance.now(); requestAnimationFrame(frame); }
-            });
-            document.getElementById('colorBtn').addEventListener('click', () => {
-                globalHue = (globalHue + 40) % 360;
-                // recolor current particles
-                for (let i = 0; i < particles.length; i++) {
-                    const hue = (globalHue + Math.random() * 30 - 15) % 360;
-                    particles[i].color = `hsla(${hue}, 100%, ${20 + Math.random() * 40}%, ${0.95 - Math.random() * 0.6})`;
-                }
-            });
+        // click/tap to pulse at pointer
+        canvas.addEventListener('pointerdown', (e) => {
+            // make a local pulse stronger
+            pulse(1.9);
+            // small burst of bright particles at pointer
+            const rect = canvas.getBoundingClientRect();
+            const px = (e.clientX - rect.left);
+            const py = (e.clientY - rect.top);
+            for (let i = 0; i < 40; i++) {
+                const p = new Particle(px + (Math.random() - 0.5) * 20, py + (Math.random() - 0.5) * 20, `hsla(${globalHue}, 100%, ${60 + Math.random() * 20}%, 1)`);
+                p.tx = CENTER_X + (Math.random() - 0.5) * 160;
+                p.ty = CENTER_Y + (Math.random() - 0.5) * 160;
+                p.size = 2 + Math.random() * 2;
+                particles.push(p);
+            }
+            // keep particle count bounded
+            while (particles.length > PARTICLE_COUNT + 120) particles.shift();
+        });
 
-            // click/tap to pulse at pointer
-            canvas.addEventListener('pointerdown', (e) => {
-                // make a local pulse stronger
-                pulse(1.9);
-                // small burst of bright particles at pointer
-                const rect = canvas.getBoundingClientRect();
-                const px = (e.clientX - rect.left);
-                const py = (e.clientY - rect.top);
-                for (let i = 0; i < 40; i++) {
-                    const p = new Particle(px + (Math.random() - 0.5) * 20, py + (Math.random() - 0.5) * 20, `hsla(${globalHue}, 100%, ${60 + Math.random() * 20}%, 1)`);
-                    p.tx = CENTER_X + (Math.random() - 0.5) * 160;
-                    p.ty = CENTER_Y + (Math.random() - 0.5) * 160;
-                    p.size = 2 + Math.random() * 2;
-                    particles.push(p);
-                }
-                // keep particle count bounded
-                while (particles.length > PARTICLE_COUNT + 120) particles.shift();
-            });
+        // initial clear
+        ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, canvas.clientWidth, canvas.clientHeight);
 
-            // initial clear
-            ctx.fillStyle = 'black';
-            ctx.fillRect(0, 0, canvas.clientWidth, canvas.clientHeight);
-
-// ensure size initially correct
-resize();
+        // ensure size initially correct
+        resize();
     </script>
 </body>
 
