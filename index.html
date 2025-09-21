@@ -89,14 +89,14 @@
 
 <body>
     <div class="wrap">
-        <h1>Heart Animation — bosginga pulse</h1>
+        <h1>Heart Animation —pulse</h1>
         <canvas id="heart_canvas"></canvas>
         <div class="controls">
             <button id="pulseBtn" class="btn">Pulse (siqish)</button>
             <button id="toggleBtn" class="btn">Toʻxtat / Qayta ishga tushir</button>
             <button id="colorBtn" class="btn">Rangni oʻzgartir</button>
         </div>
-        <small class="era">Sanga Ruxshon</small>
+        <small class="era">Ruxshona</small>
     </div>
 
     <script>
@@ -107,12 +107,12 @@
         ctx.scale(devicePixelRatio, devicePixelRatio);
 
         // SETTINGS (o'zgartirsa bo'ladi)
-        let PARTICLE_COUNT = 900;      // zarracha soni
+        let PARTICLE_COUNT = 7000;      // zarracha soni
         let SIZE = Math.min(canvas.clientWidth, canvas.clientHeight); // bazaviy o'lcham
         let HEART_SCALE = SIZE / 30;   // yurak hajmi
         let CENTER_X = canvas.clientWidth / 2;
         let CENTER_Y = canvas.clientHeight / 2 + 20;
-        let globalHue = 350; // boshlang'ich rang (0-360)
+        let globalHue = 360; // boshlang'ich rang (0-360)
         let running = true;
 
         // Particle konstruktor
@@ -123,9 +123,9 @@
             this.vy = (Math.random() - 0.5) * 0.6;
             this.tx = x;
             this.ty = y;
-            this.life = Math.random() * 100 + 50;
+            this.life = Math.random() * 90 + 40;
             this.age = Math.random() * this.life;
-            this.size = Math.random() * 1.6 + 0.4;
+            this.size = Math.random() * 1.6 + 0.6;
             this.color = color;
         }
 
@@ -146,7 +146,7 @@
                 this.tx = p.x;
                 this.ty = p.y;
                 this.age = 0;
-                this.life = Math.random() * 120 + 40;
+                this.life = Math.random() * 127 + 400;
                 this.size = Math.random() * 1.8 + 0.4;
             }
         }
@@ -179,8 +179,8 @@
             const p = heartXY(t);
             const c = mapToCanvas(p);
             // jitter to get fuzzy/smoke effect
-            c.x += (Math.random() - 0.5) * 18;
-            c.y += (Math.random() - 0.5) * 18;
+            c.x += (Math.random() - 0.5) * 19;
+            c.y += (Math.random() - 0.5) * 19;
             return c;
         }
 
