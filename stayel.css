@@ -47,6 +47,7 @@ h1 {
 }
 
 #heart_canvas {
+    width: 100%;
     width: 540px;
     height: 540px;
     max-width: 96vw;
